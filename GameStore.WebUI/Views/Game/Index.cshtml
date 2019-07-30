@@ -1,0 +1,93 @@
+﻿@using Microsoft.AspNetCore.Http.Extensions
+@model GameStore.Application.ViewModels.Game.GamesListViewModel
+
+@{
+    ViewData["Title"] = "Games";
+}
+<div class="row m-1 p-1">
+    <div class="col-2 mt-1">
+        @foreach (var category in Model.Categories)
+        {
+            <a class="btn btn-block btn-secondary"
+               asp-action="Index"
+               asp-controller="Game"
+               asp-route-category="@category.Name">
+                @category.Name
+            </a>
+        }
+    </div>
+
+    <div class="col-10">
+        @if (Model.Games.Items.Any())
+        {
+            @* game list *@
+            @foreach (var item in Model.Games.Items)
+            {
+                <div class="card m-1 p-1">
+                    <div class="p-1">
+                        <h4>
+                            @item.Name
+                            <span class="badge badge-pill badge-primary" style="float: right">
+                                <small>$@Math.Round(item.Price, 2)</small>
+                            </span>
+                        </h4>
+                    </div>
+                    <form id="@item.Id" asp-action="AddToCart"
+                          asp-controller="Cart">
+                        <input type="hidden" name="gameId" asp-for="@item.Id" />
+                        <input type="hidden" name="returnUrl"
+                               value="@(ViewContext.HttpContext.Request.GetEncodedPathAndQuery())" />
+                        <span class="card-text p-1">
+                            @foreach (var category in item.Categories)
+                            {
+                                <span class="badge badge-dark">@category.Name</span>
+                            }
+                            <br />
+                            <span class="ml-1">@item.Description</span>
+
+                            <button type="submit"
+                                    class="btn btn-success btn-sm " style="float: right">
+                                Add To Cart
+                            </button>
+                        </span>
+                    </form>
+                </div>
+            }
+
+            @if (Model.Games.HasPreviousPage || Model.Games.HasNextPage)
+            {
+                <div class="m-1 mt-3">
+                    <nav>
+                        <ul class="pagination">
+                            <li class="page-item @(Model.Games.HasPreviousPage ? string.Empty : " disabled")">
+                                <a class="page-link"
+                                   asp-area="" asp-controller="Game"
+                                   asp-action="Index" asp-route-p="@(Model.Games.PageNumber - 1)">Previous</a>
+                            </li>
+                            @for (var i = 1; i <= Model.Games.TotalPages; i++)
+                            {
+                                <li class="page-item @(Model.Games.PageNumber == i ? " active" : string.Empty)">
+                                    <a class="page-link "
+                                       asp-area="" asp-controller="Game"
+                                       asp-action="Index" asp-route-p="@i">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(Model.Games.HasNextPage ? string.Empty : " disabled")">
+                                <a class="page-link"
+                                   asp-area="" asp-controller="Game"
+                                   asp-action="Index" asp-route-p="@(Model.Games.PageNumber + 1)">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+
+            }
+        }
+        else
+        {
+            <div>
+                <h1 class="display-4">No games available</h1>
+            </div>
+        }
+    </div>
+</div>

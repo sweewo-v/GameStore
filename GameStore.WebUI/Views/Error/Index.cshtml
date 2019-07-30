@@ -1,0 +1,36 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <title>Error</title>
+    <style>
+        body {
+            background: #dedede;
+        }
+
+        .page-wrap {
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrap d-flex flex-row align-items-center">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-12 text-center">
+                    <span class="display-1 d-block">Error</span>
+                    <div class="mb-4 lead">
+                        An error occurred while processing your request.
+                    </div>
+                    <a asp-area="" asp-controller="Home"
+                       asp-action="Index">Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
