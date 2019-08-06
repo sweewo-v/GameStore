@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace GameStore.WebUI
 {
@@ -77,15 +78,10 @@ namespace GameStore.WebUI
             services.AddSession();
 
             // Antiforgery tokens require data protection.
-            if (!_hostingEnvironment.IsDevelopment())
-            {
-                services.AddDataProtection()
-                    .PersistKeysToGoogleCloudStorage(
-                        Configuration["DataProtection:Bucket"],
-                        Configuration["DataProtection:Object"])
-                    .ProtectKeysWithGoogleKms(
-                        Configuration["DataProtection:KmsKeyName"]);
-            }
+            services.AddDataProtection()
+                .PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(
+                        Configuration["Redis-keys:Configuration"]),
+                        Configuration["Redis-keys:InstanceName"]);
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
