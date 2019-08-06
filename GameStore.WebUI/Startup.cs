@@ -80,8 +80,8 @@ namespace GameStore.WebUI
             // Antiforgery tokens require data protection.
             services.AddDataProtection()
                 .PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(
-                        Configuration["Redis-keys:Configuration"]),
-                        Configuration["Redis-keys:InstanceName"]);
+                        Configuration["RedisKeys:Configuration"]),
+                        Configuration["RedisKeys:InstanceName"]);
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
