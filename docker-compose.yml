@@ -1,0 +1,56 @@
+version: '3'
+services:
+  game-store:
+    build:
+      context: .
+      dockerfile: GameStore.WebUI/Dockerfile
+    image: game-store:latest
+    depends_on:
+      - redis
+      - mysql
+    networks:
+      - front-tier
+      - back-tier
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__GameStoreDatabase= server=mysql;userid=root;password=pass;database=game_store_db;
+      - ConnectionStrings__GameStoreIdentityDatabase= server=mysql;userid=root;password=pass;database=game_store_identity_db;
+      - Redis__Configuration= redis
+      - RedisKeys__Configuration= redis
+    ports:
+      - "80"
+  redis:
+    image: redis
+    volumes:
+     - redis-data:/data
+    networks:
+     - back-tier
+  mysql:
+    image: mysql:5.7.27
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+     - back-tier
+    environment:
+      MYSQL_ROOT_PASSWORD: pass
+  loadbalancer:
+    image: 'dockercloud/haproxy:latest'
+    links:
+      - game-store
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 80:80
+    networks:
+      - front-tier
+
+volumes:
+  redis-data:
+    driver: local
+  mysql-data:
+
+networks:
+  front-tier:
+    driver: bridge
+  back-tier:
+    driver: bridge
