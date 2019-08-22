@@ -3,7 +3,6 @@ using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using GameStore.Application.Infrastructure.Auth;
-using GameStore.Application.Interfaces.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 
@@ -15,16 +14,13 @@ namespace GameStore.Application.Commands.Admin.CreateAdmin
 
         private readonly RoleManager<IdentityRole> roleManager;
 
-        private readonly ISecurityPasswordService securityPasswordService;
-
         private readonly IPasswordValidator<IdentityUser> passwordValidator;
 
         public CreateAdminCommandHandler(UserManager<IdentityUser> userManager,
-            RoleManager<IdentityRole> roleManager, ISecurityPasswordService securityPasswordService, IPasswordValidator<IdentityUser> passwordValidator)
+            RoleManager<IdentityRole> roleManager, IPasswordValidator<IdentityUser> passwordValidator)
         {
             this.userManager = userManager;
             this.roleManager = roleManager;
-            this.securityPasswordService = securityPasswordService;
             this.passwordValidator = passwordValidator;
         }
 
@@ -33,11 +29,6 @@ namespace GameStore.Application.Commands.Admin.CreateAdmin
             if (roleManager.IsAdminAvailable())
             {
                 return Unit.Value;
-            }
-
-            if (!securityPasswordService.IsSecurityPasswordCorrect(request.SecurityPassword))
-            {
-                throw new AuthenticationException("Security password is incorrect.");
             }
 
             var adminRole = new IdentityRole("Admin");
