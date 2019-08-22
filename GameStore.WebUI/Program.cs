@@ -1,7 +1,4 @@
-﻿using System;
-using GameStore.Application.Infrastructure.Auth;
-using GameStore.Application.Interfaces;
-using GameStore.Application.Interfaces.Auth;
+﻿using GameStore.Application.Interfaces;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -23,18 +20,9 @@ namespace GameStore.WebUI
                     .GetService<IGameStoreDbContext>();
                 var identityContext = scope.ServiceProvider
                     .GetService<IdentityDbContext<IdentityUser>>();
-                var securityPasswordService = scope.ServiceProvider
-                    .GetService<ISecurityPasswordService>();
-                var roleManager = scope.ServiceProvider
-                    .GetService<RoleManager<IdentityRole>>();
 
                 context.Migrate();
                 identityContext.Database.Migrate();
-
-                if (!roleManager.IsAdminAvailable())
-                {
-                    Console.WriteLine($"Security password: {securityPasswordService.SecurityPassword}");
-                }
             }
 
             host.Run();

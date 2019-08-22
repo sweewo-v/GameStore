@@ -3,10 +3,8 @@ using AutoMapper;
 using FluentValidation.AspNetCore;
 using GameStore.Application.Commands.Game.CreateGame;
 using GameStore.Application.Infrastructure;
-using GameStore.Application.Infrastructure.Auth;
 using GameStore.Application.Infrastructure.Mapping;
 using GameStore.Application.Interfaces;
-using GameStore.Application.Interfaces.Auth;
 using GameStore.Application.Queries.Game.GetAllGames;
 using GameStore.Domain.Common;
 using GameStore.Persistence;
@@ -60,7 +58,6 @@ namespace GameStore.WebUI
             services.AddMediatR(typeof(GetAllGamesQuery).GetTypeInfo().Assembly);
             services.AddScoped(SessionCart.GetCart);
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<ISecurityPasswordService, SecurityPasswordService>();
 
             services.AddRouting(options => options.LowercaseUrls = true);
             services

@@ -14,8 +14,6 @@ namespace GameStore.Application.Commands.Admin.CreateAdmin
                 .NotEmpty()
                 .MaximumLength(20)
                 .MinimumLength(3);
-            RuleFor(e => e.SecurityPassword)
-                .NotEmpty();
         }
     }
 }

@@ -9,7 +9,5 @@ namespace GameStore.Application.Commands.Admin.CreateAdmin
         public string Password { get; set; }
 
         public string ReturnUrl { get; set; } = "/";
-
-        public string SecurityPassword { get; set; }
     }
 }
