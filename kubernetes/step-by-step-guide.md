@@ -71,7 +71,7 @@ New kubernetes service connection:
 ## Create a build pipeline
 
 Don't forget to add 2 variables:
-```json
+```yaml
 DockerImageName: [project-id]/gamestore
 DockerRegistry: [created connection to docker registry name]
 ```
