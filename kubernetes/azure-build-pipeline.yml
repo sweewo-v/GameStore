@@ -1,0 +1,57 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-16.04'
+
+steps:
+- task: Docker@2
+  displayName: Docker build
+  inputs:
+    containerRegistry: $(DockerRegistry)
+    repository: $(DockerImageName)
+    command: 'build'
+    Dockerfile: 'GameStore.WebUI/Dockerfile'
+    buildContext: '.'
+    addPipelineData: false
+
+- task: Bash@3
+  displayName: Build & Run unit tests
+  inputs:
+    targetType: 'inline'
+    script: |
+      docker build --pull -t gamestore:unittests -f ./GameStore.UnitTests/Dockerfile .
+      mkdir $(System.DefaultWorkingDirectory)/testResultsFiles
+      docker run --rm -v $(System.DefaultWorkingDirectory)/testResultsFiles:/app/GameStore.UnitTests/TestResults gamestore:unittests
+
+- task: PublishTestResults@2
+  inputs:
+    testRunner: VSTest
+    searchFolder: $(System.DefaultWorkingDirectory)/testResultsFiles
+    testResultsFiles: '**/*.trx'
+    failTaskOnFailedTests: true
+
+- task: Docker@2
+  displayName: Docker push
+  inputs:
+    containerRegistry: $(DockerRegistry)
+    repository:  $(DockerImageName)
+    command: 'push'
+
+- task: CmdLine@1
+  displayName: 'Lock image version in deployment.yaml'
+  inputs:
+    filename: /bin/bash
+    arguments: '-c "awk ''{gsub(\"GAMESTORE_IMAGE\", \"gcr.io/$(DockerImageName):$(Build.BuildId)\", $0); print}'' kubernetes/deployment.yaml > $(build.artifactstagingdirectory)/deployment.yaml"'
+
+- task: CopyFiles@2
+  displayName: 'CopyFiles used in release pipeline'
+  inputs:
+    SourceFolder: '$(System.DefaultWorkingDirectory)/kubernetes'
+    Contents: 'deployment.sh'
+    TargetFolder: '$(build.artifactstagingdirectory)'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact'
+  inputs:
+    PathtoPublish: '$(build.artifactstagingdirectory)'
