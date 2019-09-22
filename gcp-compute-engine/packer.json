@@ -1,0 +1,107 @@
+{
+  "variables": {
+    "gcp_project": "",
+    "gcp_zone": "",
+    "windows_user": "packer_user",
+    "windows_password": "packer123",
+    "image_name": "vsts",
+    "image_family": "vsts",
+    "app_package": ""
+  },
+  "builders": [
+    {
+      "type": "googlecompute",
+      "project_id": "{{user `gcp_project`}}",
+      "source_image_family": "windows-2016-core",
+      "disk_type": "pd-ssd",
+      "disk_size": "50",
+      "instance_name": "{{user `image_name`}}",
+      "image_name": "{{user `image_name`}}",
+      "image_family": "{{user `image_family`}}",
+      "machine_type": "n1-standard-2",
+      "communicator": "winrm",
+      "winrm_username": "{{user `windows_user`}}",
+      "winrm_password": "{{user `windows_password`}}",
+      "winrm_insecure": true,
+      "winrm_use_ssl": true,
+      "winrm_port": 5986,
+      "metadata": {
+        "windows-startup-script-cmd": "winrm quickconfig -quiet & net user /add {{user `windows_user`}} {{user `windows_password`}} & net localgroup administrators {{user `windows_user`}} /add & winrm set winrm/config/service/auth @{Basic=\"true\"}"
+      },
+      "zone": "{{user `gcp_zone`}}",
+      "use_internal_ip": true,
+      "state_timeout": "8m",
+      "scopes": [ "https://www.googleapis.com/auth/cloud-platform"]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "powershell",
+      "inline": [
+        "$ErrorActionPreference = \"Stop\"",
+
+        "# Download application package from Cloud Storage",
+        "gsutil cp {{user `app_package`}} $env:TEMP\\app.zip",
+
+        "# Install IIS",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServer",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-CommonHttpFeatures",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpErrors",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpRedirect",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-ApplicationDevelopment",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-HealthAndDiagnostics",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpLogging",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-LoggingLibraries",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-RequestMonitor",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpTracing",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-Security",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-RequestFiltering",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-Performance",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerManagementTools",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-IIS6ManagementCompatibility",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-Metabase",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-DefaultDocument",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-ApplicationInit",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-ISAPIExtensions",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-ISAPIFilter",
+        "Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpCompressionStatic",
+
+        "# Extract application package to wwwroot",
+        "New-Item -ItemType directory -Path $env:TEMP\\app",
+        "Add-Type -AssemblyName System.IO.Compression.FileSystem",
+        "[System.IO.Compression.ZipFile]::ExtractToDirectory(\"$env:TEMP\\app.zip\", \"$env:TEMP\\app\")",
+        "Remove-Item $env:TEMP\\app.zip",
+        "Move-Item -Path $(dir -recurse $env:TEMP\\app\\**\\**\\Out | % { $_.FullName }) -Destination c:\\inetpub\\wwwroot\\app -force",
+
+        "# Configure IIS web application pool and application",
+        "Import-Module WebAdministration",
+        "New-WebAppPool gamestore-net",
+        "New-WebApplication -Name GameStore -Site 'Default Web Site' -PhysicalPath c:\\inetpub\\wwwroot\\app -ApplicationPool gamestore-net",
+
+        "# Grant read/execute access to the application pool user",
+        "&icacls C:\\inetpub\\wwwroot\\app\\ /grant \"IIS AppPool\\gamestore-net:(OI)(CI)(RX)\"",
+
+        "# Create data folder and grant write access to the application pool user",
+        "New-Item -ItemType directory -Path C:\\inetpub\\wwwroot\\app\\App_Data\\",
+        "&icacls C:\\inetpub\\wwwroot\\app\\App_Data\\ /grant \"IIS AppPool\\gamestore-net:(OI)(CI)M\"",
+
+        "# Disable searching for Windows updates",
+        "New-ItemProperty -Path HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU -Name NoAutoUpdate -Value 1 -PropertyType DWORD -Force",
+
+        "# Download and install .net core hosting bundle",
+        "Invoke-WebRequest 'https://download.visualstudio.microsoft.com/download/pr/51c29196-43b3-47d6-a393-d0df24081ac1/8b8d720b3cd63d88a2fd69115ab713c5/dotnet-hosting-2.2.7-win.exe' -OutFile 'installer.exe'",
+        "Start-Process C:\\Users\\packer_user\\installer.exe -ArgumentList \"/S /v/qn\" -wait",
+
+        "# Add task to run gce metadata scripts on schedule",
+        "schtasks.exe /create /tn \"GCE Startup Scripts\" /ru SYSTEM /Sc ONSTART /RL HIGHEST /tr \"C:\\Program Files\\Google\\Compute Engine\\metadata_scripts\\run_startup_scripts.cmd\"",
+
+        "# Disable provisioning user",
+        "disable-localuser {{user `windows_user`}}",
+
+        "# Generalize the image",
+        "& \"$Env:Programfiles\\Google\\Compute Engine\\sysprep\\gcesysprep\""
+      ]
+    }
+  ]
+}

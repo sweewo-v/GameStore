@@ -1,0 +1,78 @@
+resources:
+- repo: self
+  fetchDepth: 1
+
+trigger:
+- master
+
+variables:
+  artifactName: 'GameStore'
+
+jobs:
+- job: Build
+  displayName: Build application
+  condition: succeeded()
+  pool:
+    vmImage: vs2017-win2016
+    demands:
+    - msbuild
+    - visualstudio
+  variables:
+    solution: 'GameStore.sln'
+    buildPlatform: 'Any CPU'
+    buildConfiguration: 'Release'
+  steps:
+  - task: NuGetToolInstaller@0
+    displayName: 'Use NuGet 4.4.1'
+    inputs:
+      versionSpec: 4.4.1
+  - task: NuGetCommand@2
+    displayName: 'NuGet restore'
+    inputs:
+      restoreSolution: '$(solution)'
+  - task: VSBuild@1
+    displayName: 'Build solution'
+    inputs:
+      solution: '$(solution)'
+      msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactstagingdirectory)\\"'
+      platform: '$(buildPlatform)'
+      configuration: '$(buildConfiguration)'
+  - task: CopyFiles@2
+    displayName: 'CopyFiles used in release pipeline'
+    inputs:
+        SourceFolder: '$(System.DefaultWorkingDirectory)/gcp-compute-engine'
+        Contents: 'create-startup-script.ps1'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+  - task: PublishSymbols@2
+    displayName: 'Publish symbols path'
+    continueOnError: true
+    inputs:
+      SearchPattern: '**\bin\**\*.pdb'
+      PublishSymbols: false
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact'
+    inputs:
+      PathtoPublish: '$(build.artifactstagingdirectory)'
+      ArtifactName: '$(artifactName)'
+
+- job: CreateVM
+  displayName: Create VM image
+  dependsOn: Build
+  condition: succeeded()
+  pool:
+    name: 'Google Cloud'
+  steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download Build Artifacts'
+    inputs:
+      artifactName: '$(artifactName)'
+  - task: CmdLine@1
+    displayName: 'Publish artifact to Cloud Storage'
+    inputs:
+      filename: gsutil
+      arguments: 'cp $(System.ArtifactsDirectory)\$(artifactName)\GameStore.WebUI.zip gs://$(Packer.Project)-artifacts/GameStore.WebUI-$(Build.BuildId).zip'
+  - task: CmdLine@1
+    displayName: 'Create image'
+    inputs:
+      filename: packer
+      arguments: 'build -var "gcp_project=$(Packer.Project)" -var "gcp_zone=$(Packer.Zone)" -var "image_family=gamestore" -var "image_name=gamestore-$(Build.BuildId)" -var "app_package=gs://$(Packer.Project)-artifacts/GameStore.WebUI-$(Build.BuildId).zip" $(Build.SourcesDirectory)/gcp-compute-engine/packer.json'
