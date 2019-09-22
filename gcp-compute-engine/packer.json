@@ -3,7 +3,7 @@
     "gcp_project": "",
     "gcp_zone": "",
     "windows_user": "packer_user",
-    "windows_password": "packer123",
+    "windows_password": "Packer123",
     "image_name": "vsts",
     "image_family": "vsts",
     "app_package": ""
