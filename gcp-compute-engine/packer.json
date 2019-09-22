@@ -13,7 +13,6 @@
       "type": "googlecompute",
       "project_id": "{{user `gcp_project`}}",
       "source_image_family": "windows-2016-core",
-      "disk_type": "pd-ssd",
       "disk_size": "50",
       "instance_name": "{{user `image_name`}}",
       "image_name": "{{user `image_name`}}",
