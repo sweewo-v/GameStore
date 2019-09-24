@@ -3,6 +3,7 @@
 [![Build Status](https://dev.azure.com/sweewo/OfferingDemo/_apis/build/status/13)](https://dev.azure.com/sweewo/OfferingDemo/_apis/build/status/13)
 
 - [Step by step guide](#step-by-step-guide)
+    - [Requirements](#requirements)
     - [Configuring GCP staging & production environment](#configuring-gcp-staging--production-environment)
         - [Configure agent](#configure-agent)
         - [Configure the staging environment](#configure-the-staging-environment)
@@ -20,9 +21,16 @@
             - [Deploying the production environment](#deploying-the-production-environment)
             - [Running the pipeline](#running-the-pipeline)
 
+## Requirements
+
+To go through this step by step guide you will need a few things:
+- AzureDevops account
+- Google account
+
 ## Configuring GCP staging & production environment
 
 ### Configure agent
+
 Initialize an environment variables:
 ```bash
 gcloud services enable compute.googleapis.com
@@ -261,16 +269,17 @@ Using [GameStore](https://github.com/sweewo-v/GameStore) as an example, you will
 To begin, create a new project in your Azure DevOps account:
 
 1. Go to the Azure DevOps home page (https://dev.azure.com/[ACCOUNT]).
-1. Click Create Project.
-1. Enter a project name, such as Orchard.
-1. Set Visibility to Private, and then click Create.
-1. After the project has been created, in the menu on the left, click Repos.
+1. Click <b>Create Project</b>.
+1. Enter a project name, such as <b>GameStore</b>.
+1. Set Visibility to Private, and then click <b>Create</b>.
+1. After the project has been created, in the menu on the left, click <b>Repos</b>.
 1. Click Import to fork the GameStore repository from GitHub. Set the following values:
+
    - Source type: Git
    - Clone URL: https://github.com/sweewo-v/GameStore.git
    - Leave the Requires authorization checkbox unselected.
    
-1. Click Import. When the import process is done, you see the source code for GameStore.
+1. Click <b>Import</b>. When the import process is done, you see the source code for GameStore.
 
 ### Building continuously
 
@@ -288,17 +297,17 @@ To begin, create a new project in your Azure DevOps account:
 1. Click <b>New release pipeline</b>.
 1. From the list of templates, select <b>Empty job</b>.
 1. When you're prompted for a name for the stage, enter <i>Stage</i>.
-1. In the pipeline diagram, next to Artifacts, click Add.
+1. In the pipeline diagram, next to Artifacts, click <b>Add</b>.
 1. Select Build and add the following settings:
    - Source: Select early created Git repository.
    - Default version: <i>Latest</i>.
    - Source alias: <i>manifest</i>.
-   - Click Add.
+   - Click <b>Add</b>.
 
 1. On the Artifact box, click the lightning bolt icon to add a deployment trigger.
-1. Under Continuous deployment trigger, set the switch to Enabled.
-1. Click Save.
-1. Enter a comment if you want, and confirm by clicking Save.
+1. Under Continuous deployment trigger, set the switch to <b>Enabled</b>.
+1. Click <b>Save</b>.
+1. Enter a comment if you want, and confirm by clicking <b>Save</b>.
 
 #### Storing env variables
 
@@ -309,12 +318,12 @@ To begin, create a new project in your Azure DevOps account:
    - Variable group name: gamestore-staging-env
    - Variables:
 
-      |Name|Value|
-      |---|---|
-      |GameStore_WebUI_ConnectionStrings__GameStoreDatabase|Connection string to gamestore db|
-      |GameStore_WebUI_ConnectionStrings__GameStoreIdentityDatabase|Connection string to gamestore identity db|
-      |GameStore_WebUI_Redis__Configuration|Connection string to Redis caching|
-      |GameStore_WebUI_RedisKeys__Configuration|Connection string to Redis keys storage|
+       |Name|Value|
+       |---|---|
+       |GameStore_WebUI_ConnectionStrings__GameStoreDatabase|Connection string to gamestore db|
+       |GameStore_WebUI_ConnectionStrings__GameStoreIdentityDatabase|Connection string to gamestore identity db|
+       |GameStore_WebUI_Redis__Configuration|Connection string to Redis caching|
+       |GameStore_WebUI_RedisKeys__Configuration|Connection string to Redis keys storage|
 
 1. Repeat previous step but with specific <i>Variable group name</i> : gamestore-production-env.
 
@@ -327,31 +336,31 @@ You will get something like this:
 1. Click Agent job.
 1. Change the agent pool to <b>Private > Google Cloud</b>.
 1. Next to Agent job, click the + icon to add a step to the phase.
-1. Select the PowerShell task, click Add, and configure the following settings:
+1. Select the PowerShell task, click <b>Add</b>, and configure the following settings:
    - Version: 2.*
    - Display name: Create startup script file
    - Type: File Path
    - Script Path: $(System.DefaultWorkingDirectory)/manifest/GameStore/create-startup-script.ps1
    - Working Directory: $(System.DefaultWorkingDirectory)/manifest/GameStore
-1. Select the Command Line task, click Add, and configure the following settings:
+1. Select the Command Line task, click <b>Add</b>, and configure the following settings:
    - Version: 1.*
    - Display name: Create instance template
    - Tool: gcloud
-   - Arguments: compute instance-templates create gamestore-$(Build.BuildId)-$(Release.ReleaseId)-stage --machine-type n1-standard-2 --image gamestore-$(Build.BuildId) --image-project $(Packer.Project) --tags=gclb-backend --metadata-from-file windows-startup-script-ps1=script.ps1
+   - Arguments: ``compute instance-templates create gamestore-$(Build.BuildId)-$(Release.ReleaseId)-stage --machine-type n1-standard-2 --image gamestore-$(Build.BuildId) --image-project $(Packer.Project) --tags=gclb-backend --metadata-from-file windows-startup-script-ps1=script.ps1``
 
    This command creates a new instance template that uses the VM image that you previously built with Packer. The command applies the gclb-backend tag so that the load balancer can reach instances that are created from this template.
 1. Add another Command Line task and configure the following settings:
    - Version: 1.*
    - Display name: Associate instance template
    - Tool: gcloud
-   - Arguments: beta compute instance-groups managed set-instance-template gamestore-stage --template=gamestore-$(Build.BuildId)-$(Release.ReleaseId)-stage --zone $(Deployment.Stage.Zone)
+   - Arguments: ``beta compute instance-groups managed set-instance-template gamestore-stage --template=gamestore-$(Build.BuildId)-$(Release.ReleaseId)-stage --zone $(Deployment.Stage.Zone)``
 
    This command updates the existing instance group to use the new instance template. Note that this command does not yet cause any of the existing VMs to be replaced or updated. Instead, it ensures that any future VMs in this instance group are created from the new template.
 1. Add another Command Line task and configure the following settings:
    - Version: 1.*
    - Display name: Start rolling update
    - Tool: gcloud
-   - Arguments: beta compute instance-groups managed rolling-action start-update gamestore-stage --version template=gamestore-$(Build.BuildId)-$(Release.ReleaseId)-stage --type proactive --min-ready 2m --max-unavailable 0 --zone $(Deployment.Stage.Zone)
+   - Arguments: ``beta compute instance-groups managed rolling-action start-update gamestore-stage --version template=gamestore-$(Build.BuildId)-$(Release.ReleaseId)-stage --type proactive --min-ready 2m --max-unavailable 0 --zone $(Deployment.Stage.Zone)``
 
    This command causes the existing instance group to replace existing VMs with new VMs in a rolling fashion.
 1. Click the Variables tab, and add the following variables:
@@ -369,43 +378,43 @@ You will get something like this:
 
 1. In Azure Pipelines, switch to the <b>Pipeline</b> tab.
 1. In the Stages box, select <b>Add > New stage</b>.
-1. From the list of templates, select Empty job.
-1. When you're prompted for a name for the stage, enter Prod.
+1. From the list of templates, select <b>Empty job</b>.
+1. When you're prompted for a name for the stage, enter <i>Prod</i>.
 1. Click the lightning bolt icon of the newly created stage.
 1. Configure the following settings:
    - Select trigger: After stage
    - Stages: Dev
    - Pre-deployment approvals: (enabled)
    - Approvers: Select your own user name.
-1. Hold the mouse over the Tasks tab and click Tasks > Prod.
-1. Click Agent job.
-1. Change the Agent pool value to Private > Google Cloud.
+1. Hold the mouse over the Tasks tab and click <b>Tasks > Prod</b>.
+1. Click <b>Agent job</b>.
+1. Change the Agent pool value to <b>Private > Google Cloud</b>.
 1. Next to Agent phase, click the + icon to add a step to the phase.
-1. Select the PowerShell task, click Add, and configure the following settings:
+1. Select the PowerShell task, click <b>Add</b>, and configure the following settings:
    - Version: 2.*
    - Display name: Create startup script file
    - Type: File Path
    - Script Path: $(System.DefaultWorkingDirectory)/manifest/GameStore/create-startup-script.ps1
    - Working Directory: $(System.DefaultWorkingDirectory)/manifest/GameStore
-1. Select the Command Line task, click Add, and configure the following settings:
+1. Select the Command Line task, click <b>Add</b>, and configure the following settings:
    - Version: 1.*
    - Display name: Create instance template
    - Tool: gcloud
-   - Arguments: compute instance-templates create gamestore-$(Build.BuildId)-$(Release.ReleaseId)-prod --machine-type n1-standard-2 --image gamestore-$(Build.BuildId) --image-project $(Packer.Project) --tags=gclb-backend --metadata-from-file windows-startup-script-ps1=script.ps1
+   - Arguments: ``compute instance-templates create gamestore-$(Build.BuildId)-$(Release.ReleaseId)-prod --machine-type n1-standard-2 --image gamestore-$(Build.BuildId) --image-project $(Packer.Project) --tags=gclb-backend --metadata-from-file windows-startup-script-ps1=script.ps1``
 
    This command creates a new instance template that uses the VM image that you previously built with Packer. The command applies the gclb-backend tag so that the load balancer can reach instances that are created from this template.
 1. Add another Command Line task and configure the following settings:
    - Version: 1.*
    - Display name: Associate instance template
    - Tool: gcloud
-   - Arguments: beta compute instance-groups managed set-instance-template gamestore-prod --template=gamestore-$(Build.BuildId)-$(Release.ReleaseId)-prod --zone $(Deployment.Prod.Zone)
+   - Arguments: ``beta compute instance-groups managed set-instance-template gamestore-prod --template=gamestore-$(Build.BuildId)-$(Release.ReleaseId)-prod --zone $(Deployment.Prod.Zone)``
 
    This command updates the existing instance group to use the new instance template. Note that this command does not yet cause any of the existing VMs to be replaced or updated. Instead, it ensures that any future VMs in this instance group are created from the new template.
 1. Add another Command Line task and configure the following settings:
    - Version: 1.*
    - Display name: Start rolling update
    - Tool: gcloud
-   - Arguments: beta compute instance-groups managed rolling-action start-update gamestore-prod --version template=gamestore-$(Build.BuildId)-$(Release.ReleaseId)-prod --type proactive --min-ready 2m --max-unavailable 0 --zone $(Deployment.Prod.Zone)
+   - Arguments: ``beta compute instance-groups managed rolling-action start-update gamestore-prod --version template=gamestore-$(Build.BuildId)-$(Release.ReleaseId)-prod --type proactive --min-ready 2m --max-unavailable 0 --zone $(Deployment.Prod.Zone)``
 
    This command causes the existing instance group to replace existing VMs with new VMs in a rolling fashion.
 1. Switch to the Variables tab.
@@ -414,8 +423,8 @@ You will get something like this:
    |Name|Value|
    |---|---|
    |Deployment.Prod.Zone|The zone that you specified earlier when running gcloud config set compute/zone|
-1. Click Save.
-1. Enter a comment if you want, and confirm by clicking OK.
+1. Click <b>Save</b>.
+1. Enter a comment if you want, and confirm by clicking <b>OK</b>.
 
 The pipeline now looks like this:
 ![](assets/images/7.png)
