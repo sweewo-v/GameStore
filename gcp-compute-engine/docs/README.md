@@ -17,7 +17,7 @@
         - [Building continuously](#building-continuously)
         - [Deploying continuously](#deploying-continuously)
             - [Storing env variables](#storing-env-variables)
-            - [Deploying the development environment](#deploying-the-development-environment)
+            - [Deploying the staging environment](#deploying-the-staging-environment)
             - [Deploying the production environment](#deploying-the-production-environment)
             - [Running the pipeline](#running-the-pipeline)
 
@@ -287,7 +287,7 @@ To begin, create a new project in your Azure DevOps account:
 1. Click <b>New pipeline</b>.
 1. Select <b>Azure Repos Git > GameStore</b>.
 1. Select <b>Existing Azure Pipelines YAML file</b>.
-1. Specify <i>Path</i> as <b>/gcp-compute-engine/azure-build-pipeline.yml</b>.
+1. Specify <i>Path</i> as <b>[/gcp-compute-engine/azure-build-pipeline.yml](../azure-build-pipeline.yml)</b>.
 
 1. Click <b>Continue</b> and <b>Run</b>.
 
@@ -330,7 +330,7 @@ To begin, create a new project in your Azure DevOps account:
 You will get something like this:
 ![](assets/images/11.png)
 
-#### Deploying the development environment
+#### Deploying the staging environment
 
 1. In Azure Pipelines, switch to the <b>Tasks</b> tab.
 1. Click Agent job.
@@ -383,7 +383,7 @@ You will get something like this:
 1. Click the lightning bolt icon of the newly created stage.
 1. Configure the following settings:
    - Select trigger: After stage
-   - Stages: Dev
+   - Stages: Staging
    - Pre-deployment approvals: (enabled)
    - Approvers: Select your own user name.
 1. Hold the mouse over the Tasks tab and click <b>Tasks > Prod</b>.
