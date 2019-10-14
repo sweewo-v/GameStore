@@ -1,6 +1,6 @@
 ﻿# Step by step guide
 
-[![Build Status](https://dev.azure.com/sweewo/OfferingDemo/_apis/build/status/13)](https://dev.azure.com/sweewo/FinalDemo/_apis/build/status/14)
+[![Build Status](https://dev.azure.com/sweewo/OfferingDemo/_apis/build/status/15)](https://dev.azure.com/sweewo/OfferingDemo/_apis/build/status/15)
 
 - [Step by step guide](#step-by-step-guide)
     - [Requirements](#requirements)
