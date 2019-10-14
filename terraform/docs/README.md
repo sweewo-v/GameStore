@@ -1,4 +1,4 @@
-﻿# Step by step guide
+# Step by step guide
 
 [![Build Status](https://dev.azure.com/sweewo/OfferingDemo/_apis/build/status/15)](https://dev.azure.com/sweewo/OfferingDemo/_apis/build/status/15)
 
@@ -80,9 +80,11 @@ To use prepared pipeline you will need:
 1. Select <b>Existing Azure Pipelines YAML file</b>.
 1. Specify <i>Path</i> as <b>[/terraform/azure-pipelines.yml](../azure-pipelines.yml)</b>.
 1. Change pipeline values:
+
     |Name|Value|
     |---|---|
     |bucket|backet name that you have created earlier|
+
 1. Click <b>Continue</b> and <b>Run</b>.
 
 ### Deploying continuously
