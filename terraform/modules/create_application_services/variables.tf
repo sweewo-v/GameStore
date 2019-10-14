@@ -27,3 +27,5 @@ variable "public_key_path" {}
 variable "ssh_user" {}
 
 variable "env" {}
+
+variable "instance-count" {}

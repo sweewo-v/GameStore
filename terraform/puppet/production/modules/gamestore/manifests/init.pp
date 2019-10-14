@@ -1,7 +1,8 @@
 class gamestore {
   file { '/var/www/gamestore':
     ensure => directory,
-    recurse => 'remote',
+    recurse => true,
+    purge => true,
     source  => 'puppet:///modules/gamestore'
   }
   file { '/etc/systemd/system/gamestore.service':
@@ -26,14 +27,21 @@ EnvironmentFile=/var/www/gamestore/env.txt
     enable => true,
     subscribe => File["/etc/systemd/system/gamestore.service"],
   }
-  file { '/etc/nginx/sites-available/default':
-    content => "
-server {
-  listen 80;
-  location / {
-    proxy_pass http://localhost:5000;
-  }
-}
+  exec { 'restart':
+    path     => '/usr/bin:/usr/sbin:/bin',
+    provider => shell,
+    onlyif   => "
+sudo systemctl restart gamestore
     ",
+  }
+
+  if('prod' in $hostname) {
+     $file = 'secure'
+  }
+  else {
+    $file = 'default'
+  }
+  file { '/etc/nginx/sites-available/default':
+    source  => "puppet:///modules/nginx/$file"
   }
 }

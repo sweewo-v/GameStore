@@ -9,7 +9,7 @@ EOF
 
 sudo tee -a /etc/puppetlabs/puppet/puppet.conf << EOF
 [agent]
-runinterval=1800
+runinterval=300
 EOF
 
 sudo systemctl start puppet

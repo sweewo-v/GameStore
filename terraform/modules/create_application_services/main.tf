@@ -8,7 +8,7 @@ resource "google_compute_instance" "puppet-master" {
       image = var.master_image_name
     }
   }
-  
+
   network_interface {
     network = var.network_name
     access_config {
@@ -16,10 +16,17 @@ resource "google_compute_instance" "puppet-master" {
   }
 
   metadata = {
-    ssh-keys = "${var.ssh_user}:${file("${var.public_key_path}")}"
+    ssh-keys    = "${var.ssh_user}:${file("${var.public_key_path}")}"
+    private-key = file(var.private_key_path)
   }
 
   metadata_startup_script = file("../puppet_scripts/puppet_master.sh")
+
+  lifecycle {
+    ignore_changes = [
+      "metadata"
+    ]
+  }
 }
 
 data "template_file" "env_file" {
@@ -32,6 +39,10 @@ data "template_file" "env_file" {
 }
 
 resource "null_resource" "env_provisioner" {
+  triggers = {
+    env_provisioner = uuid()
+  }
+
   provisioner "file" {
     source      = var.publish_folder_path
     destination = "/tmp/GameStore.WebUI.zip"
@@ -40,7 +51,7 @@ resource "null_resource" "env_provisioner" {
       type        = "ssh"
       host        = google_compute_instance.puppet-master.network_interface.0.access_config.0.nat_ip
       user        = var.ssh_user
-      private_key = file(var.private_key_path)
+      private_key = google_compute_instance.puppet-master.metadata.private-key
     }
   }
 
@@ -52,19 +63,19 @@ resource "null_resource" "env_provisioner" {
       type        = "ssh"
       host        = google_compute_instance.puppet-master.network_interface.0.access_config.0.nat_ip
       user        = var.ssh_user
-      private_key = file(var.private_key_path)
+      private_key = google_compute_instance.puppet-master.metadata.private-key
     }
   }
 
   provisioner "file" {
     content     = data.template_file.env_file.rendered
     destination = "/tmp/publish/env.txt"
-  
+
     connection {
       type        = "ssh"
       host        = google_compute_instance.puppet-master.network_interface.0.access_config.0.nat_ip
       user        = var.ssh_user
-      private_key = file(var.private_key_path)
+      private_key = google_compute_instance.puppet-master.metadata.private-key
     }
   }
 
@@ -75,7 +86,7 @@ resource "null_resource" "env_provisioner" {
       type        = "ssh"
       host        = google_compute_instance.puppet-master.network_interface.0.access_config.0.nat_ip
       user        = var.ssh_user
-      private_key = file(var.private_key_path)
+      private_key = google_compute_instance.puppet-master.metadata.private-key
     }
   }
 }
@@ -117,18 +128,7 @@ resource "google_compute_instance_group_manager" "default" {
   instance_template  = google_compute_instance_template.default.self_link
   base_instance_name = var.env
   zone               = var.zone_name
-  target_size        = 1
-}
-
-resource "google_compute_global_forwarding_rule" "default" {
-  name       = "${var.env}-global-rule"
-  target     = google_compute_target_http_proxy.default.self_link
-  port_range = "80"
-}
-
-resource "google_compute_target_http_proxy" "default" {
-  name        = "${var.env}-proxy"
-  url_map     = google_compute_url_map.default.self_link
+  target_size        = var.instance-count
 }
 
 resource "google_compute_url_map" "default" {
@@ -155,4 +155,3 @@ resource "google_compute_http_health_check" "default" {
   check_interval_sec  = 10
   unhealthy_threshold = 10
 }
-

@@ -32,8 +32,15 @@ module "application_services" {
   instance-count      = 2
 }
 
-module "http_frontend" {
-  source     = "../modules/create_http_frontend"
+module "https_frontend" {
+  source     = "../modules/create_https_frontend"
+  dns_name   = var.dns_name
   env        = var.env
   url_map    = module.application_services.url_map
+}
+
+module "dns_services" {
+  source     = "../modules/create_dns_services"
+  backend_ip = module.https_frontend.ip_address
+  dns_name   = var.dns_name
 }
