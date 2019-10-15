@@ -1,2 +1,2 @@
 project_name = "vs-final-demo"
-dns_name     = "sweetland.ml."
+dns_name     = "ita-trio.tk."

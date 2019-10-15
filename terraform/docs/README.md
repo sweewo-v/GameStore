@@ -83,7 +83,7 @@ To use prepared pipeline you will need:
 
     |Name|Value|
     |---|---|
-    |bucket|backet name that you have created earlier|
+    |bucket|bucket name that you have created earlier|
 
 1. Click <b>Continue</b> and <b>Run</b>.
 
