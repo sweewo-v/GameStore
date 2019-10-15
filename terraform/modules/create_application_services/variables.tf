@@ -28,4 +28,6 @@ variable "ssh_user" {}
 
 variable "env" {}
 
-variable "instance-count" {}
+variable "min_replicas" {}
+
+variable "max_replicas" {}

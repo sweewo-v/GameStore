@@ -128,7 +128,7 @@ resource "google_compute_instance_group_manager" "default" {
   instance_template  = google_compute_instance_template.default.self_link
   base_instance_name = var.env
   zone               = var.zone_name
-  target_size        = var.instance-count
+  target_size        = var.min_replicas
 }
 
 resource "google_compute_url_map" "default" {
@@ -154,4 +154,20 @@ resource "google_compute_http_health_check" "default" {
   request_path        = "/"
   check_interval_sec  = 10
   unhealthy_threshold = 10
+}
+
+resource "google_compute_autoscaler" "default" {
+  name   = "${var.env}-autoscaler"
+  zone   = var.zone_name
+  target = google_compute_instance_group_manager.default.self_link
+
+  autoscaling_policy {
+    max_replicas    = var.max_replicas
+    min_replicas    = var.min_replicas
+    cooldown_period = 60
+
+    cpu_utilization {
+      target = 0.5
+    }
+  }
 }

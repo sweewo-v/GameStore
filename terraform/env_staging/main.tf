@@ -29,7 +29,8 @@ module "application_services" {
   public_key_path     = var.public_key_path
   ssh_user            = var.ssh_user
   env                 = var.env
-  instance-count      = 2
+  min_replicas        = 1
+  max_replicas        = 1
 }
 
 module "http_frontend" {
